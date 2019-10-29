@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"os"
 	"strings"
@@ -9,11 +10,20 @@ import (
 
 func main() {
 
+	// Check for help
+	if len(os.Args) > 1 && (os.Args[1] == "-h" || os.Args[1] == "--help") {
+		fmt.Println("Usage: ./ascii-table [space seperated list of things to search for]")
+		fmt.Println("Example: ./ascii-table \\? p \\\" A 3F")
+		os.Exit(0)
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetHeader([]string{"Binary", "Octal", "Hex", "Decimal", "Character"})
 
 	outputText := ""
 	for i := 0; i < 128; i++ {
+		// Check for invisible control chars
 		switch i {
 		case 0:
 			outputText = "Null"
@@ -100,16 +110,16 @@ func main() {
 			outputText = "Escape"
 			break
 		case 28:
-			outputText = "File separator"
+			outputText = "File seperator"
 			break
 		case 29:
-			outputText = "Group separator"
+			outputText = "Group seperator"
 			break
 		case 30:
-			outputText = "Record separator"
+			outputText = "Record seperator"
 			break
 		case 31:
-			outputText = "Unit separator"
+			outputText = "Unit seperator"
 			break
 		case 32:
 			outputText = "Space"
@@ -118,22 +128,66 @@ func main() {
 			outputText = ""
 			break
 		}
+
+		// Check output text
 		if outputText == "" {
-			table.Append(output(i, fmt.Sprintf("%c", rune(i))))
+			outputText = fmt.Sprintf("%c", rune(i))
 		} else {
-			table.Append(output(i, fmt.Sprintf("[%s]", strings.ToUpper(outputText))))
+			outputText = fmt.Sprintf("[%s]", strings.ToUpper(outputText))
 		}
+
+		// If a any input chars are provided try and match them
+		var tableRow = []string{
+			fmt.Sprintf("%b", i),
+			fmt.Sprintf("%#o", i),
+			fmt.Sprintf("%X", i),
+			fmt.Sprintf("%d", i),
+			outputText,
+		}
+
+		// Get search terms if they exist in the table output and filter
+		if len(os.Args) > 1 {
+
+			// Function for setting green
+			green := color.New(color.FgGreen).SprintfFunc()
+
+			// Used to identify if there was any match
+			foundRow := false // Used to identify if there was any match
+
+			colorTableRow := make([]string, 0)
+			for _, item := range tableRow {
+				found := false
+				for _, arg := range os.Args[1:] {
+
+					// Case insensitive comparison
+					if strings.ToLower(item) == strings.ToLower(arg) {
+						found = true
+						foundRow = true
+						break
+					}
+				}
+
+				// If an arg matched the current item highlight it green before
+				// adding it. Otherwise add it back as is
+				if found {
+					colorTableRow = append(colorTableRow, green(item))
+				} else {
+					colorTableRow = append(colorTableRow, item)
+				}
+			}
+
+			// We only care about matches, so only add the colorTableRow to the
+			// table if this was set to true
+			if foundRow {
+				table.Append(colorTableRow)
+			}
+
+			// If no search terms provide just add row to table
+		} else {
+			table.Append(tableRow)
+		}
+
 	}
 
 	table.Render()
-}
-
-func output(input int, stringText string) []string {
-	return []string{
-		fmt.Sprintf("%#b", input),
-		fmt.Sprintf("%#o", input),
-		fmt.Sprintf("%X", input),
-		fmt.Sprintf("%d", input),
-		fmt.Sprintf("%s", stringText),
-	}
 }

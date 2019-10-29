@@ -1,7 +1,14 @@
 # ASCII Table
 
-A simple ASCII table generator for the CLI
+A simple ASCII table generator for the CLI.
 
-Completely overkill but it was fun writing it
+Completely overkill but it was fun writing it.
 
-Usuage: `./ascii-table`
+Usage: `./ascii-table -h`
+
+## Building from source
+
+As with most golang projects:
+
+    go get
+    get build
